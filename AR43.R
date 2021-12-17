@@ -1,3 +1,4 @@
+#GitHub access token: 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
 #Calculate EtOH fish biomass using length weight relationships from literature. 
 #Fish ID'ed to family
 #SL measured in ImageJ
