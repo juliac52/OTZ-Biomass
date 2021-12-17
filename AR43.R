@@ -105,7 +105,7 @@ AR43.data <- read_excel("AR43 Whole Lengths.xlsx")
 AR43.gf <- merge(AR43.data, weighted.growth.fact, by.x="Family", by.y="Family")
 AR43.gf$`Length (mm)` <- AR43.gf$`Length (cm)`*10
 AR43.gf$`Weight (mg)` <- AR43.gf$proportion_a*(AR43.gf$`Length (mm)`^AR43.gf$proportion_b)
-#test#
+#test
 sd(total$a_mean %in% total$Family)
 #vv sandbox vv
 #helpful code for sp. and spp. 
