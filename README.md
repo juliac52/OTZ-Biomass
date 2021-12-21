@@ -1,4 +1,4 @@
 # OTZ-Biomass
 Estimating OTZ fish biomass 
-test
-test
+from local comp
+from local comp
