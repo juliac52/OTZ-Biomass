@@ -4,7 +4,7 @@
 #SL measured in ImageJ
 #Use frozen fish IDs to choose which references to use in analysis 
 #
-#Cruise: AR43
+#Cruise: SG2105
 #Calculating weighted means for a and b values: 
 #Exclude frozen fish only ID'd to family, unless family 
 #is the only ID available for that family (i.e. Alepocephalidae)
@@ -26,21 +26,21 @@ library(tidyverse)
 library(dplyr)
 #import data
 lit.rev <- read_excel("Collated Length Weight relationships.xlsx")
-froz.fish.WA <- read_excel("Julia_RegionalFishCounts_4biomass.xlsx", sheet = "W. Atlantic")
-AR43.data <- read_excel("AR43_final_fish_measurements.xlsx")
-AR43.data = subset(AR43.data, select = -c(`...1`) )
-#narrow down families in froz.fish.WA to ones represented in AR43.data
-froz.fish.WA <- rename(froz.fish.WA, Family = family)
-froz.fish.use <- subset(froz.fish.WA, (Family %in% AR43.data$Family))
+froz.fish.EA <- read_excel("Julia_RegionalFishCounts_4biomass.xlsx", sheet = "E. Atlantic")
+SG2105.data <- read_excel("SG2105_final_fish_measurements.xlsx")
+SG2105.data = subset(SG2105.data, select = -c(`...1`) )
+#narrow down families in froz.fish.EA to ones represented in SG2105.data
+froz.fish.EA <- rename(froz.fish.EA, Family = family)
+froz.fish.use <- subset(froz.fish.EA, (Family %in% SG2105.data$Family))
 #separate "lowest_taxa" col. in froz.fish.use into genus and species cols. 
-froz.fish.WA.separated <-separate(froz.fish.use, lowest_taxa, c("genus","species"), sep = " ") %>% 
+froz.fish.EA.separated <-separate(froz.fish.use, lowest_taxa, c("genus","species"), sep = " ") %>% 
   replace_na(list(species = "sp."))
 
 #remove rows only identified to family, unless there are no members of family ID'd to genus  
-froz.fish.WA.separated$use <- ifelse(froz.fish.WA.separated$genus == froz.fish.WA.separated$Family,
-                                     !duplicated(froz.fish.WA.separated$Family),
-                                     froz.fish.WA.separated$genus)
-froz.fish.WA.use <- froz.fish.WA.separated[!grepl("FALSE", froz.fish.WA.separated$use),]
+froz.fish.EA.separated$use <- ifelse(froz.fish.EA.separated$genus == froz.fish.EA.separated$Family,
+                                     !duplicated(froz.fish.EA.separated$Family),
+                                     froz.fish.EA.separated$genus)
+froz.fish.EA.use <- froz.fish.EA.separated[!grepl("FALSE", froz.fish.EA.separated$use),]
 
 #make sure all units are in mm and mg by converting a values 
 #convert all a values so y unit = mg 
@@ -72,13 +72,13 @@ genus.b.mean <- tapply(lit.rev.final$`b value (WW)`, lit.rev.final$genus,mean)
 genus.b.mean.df <- as.data.frame.table(genus.b.mean)
 colnames(genus.b.mean.df) <- c("genus", "b_mean")
 
-#get genus totals for froz.fish.WA.use
-genus.totals <- data.frame(aggregate(Count~Family+genus, data = froz.fish.WA.use, FUN = sum)) 
+#get genus totals for froz.fish.EA.use
+genus.totals <- data.frame(aggregate(Count~Family+genus, data = froz.fish.EA.use, FUN = sum)) 
 
 #find which genera are missing in genus.a.mean.df and genus.b.mean.df 
 missing.genera <- subset(genus.totals,!(genus%in%genus.a.mean.df$genus))
 sum(missing.genera$Count)/sum(genus.totals$Count)*100
-#2.8% of individuals missing in missing genera 
+#4.7% of individuals missing in missing genera 
 #use missing.genera list to search for missing genera 
 
 #combine genus.totals and lit.rev dataframes by $genus
@@ -100,40 +100,40 @@ a <- data.frame(aggregate(proportion_a~Family, data = total, FUN = sum))
 b <- aggregate(proportion_b~Family, data = total, FUN = sum)
 weighted.growth.fact <- merge(a, b)
 
-#apply a and b values to measured AR43 fish 
-AR43.gf <- merge(AR43.data, weighted.growth.fact, by.x="Family", by.y="Family")
-AR43.gf$`Length (mm)` <- AR43.gf$`Length (cm)`*10
-AR43.gf$`Weight (mg)` <- AR43.gf$proportion_a*(AR43.gf$`Length (mm)`^AR43.gf$proportion_b)
+#apply a and b values to measured SG2105 fish 
+SG2105.gf <- merge(SG2105.data, weighted.growth.fact, by.x="Family", by.y="Family")
+SG2105.gf$`Length (mm)` <- SG2105.gf$`Length (cm)`*10
+SG2105.gf$`Weight (mg)` <- SG2105.gf$proportion_a*(SG2105.gf$`Length (mm)`^SG2105.gf$proportion_b)
 
-#calculate biomass per volume filtered 
+#calculate biomass per volume filtered *change for Sarmiento*
 otz_nets <- read_excel("OTZ_NETS.xlsx")
-#only include AR43 cruise 
-otz_nets <- otz_nets[otz_nets$cruise_no == 'AR43',]
-#make a column in common between otz_nets and AR43.gf, tow-net ID
+#only include SG2105 cruise 
+otz_nets <- otz_nets[otz_nets$cruise_no == 'SG2105',]
+#make a column in common between otz_nets and SG2105.gf, tow-net ID
 otz_nets$tow_ID <- paste(otz_nets$tow_type, otz_nets$tow_no, otz_nets$net_no, sep = "-")
-AR43.gf$tow_ID <- paste(AR43.gf$Tow, AR43.gf$Net, sep = "-")
-#merge otz_nets and AR43.gf by tow_ID
-AR43_flow <- merge(AR43.gf,otz_nets,by="tow_ID")
-#calculate mg/m^3 filtered 
-AR43_flow$net_volume_filtered <- as.numeric(AR43_flow$net_volume_filtered)
-AR43_flow$`mg/m^3_filtered` <- AR43_flow$`Weight (mg)`/AR43_flow$net_volume_filtered  
+SG2105.gf$tow_ID <- paste(SG2105.gf$Tow, SG2105.gf$Net, sep = "-")
+#merge otz_nets and SG2105.gf by tow_ID
+SG2105_flow <- merge(SG2105.gf,otz_nets,by="tow_ID")
+#calculate "biomass"/m^3 filtered 
+SG2105_flow$net_volume_filtered <- as.numeric(SG2105_flow$net_volume_filtered)
+SG2105_flow$biomass_per_filtered <- SG2105_flow$`Weight (mg)`/SG2105_flow$net_volume_filtered  
 
 #add date and time data to MOC tows 
 otz_tows <- read_excel("OTZ_TOWS.xlsx")
-AR43_tows <- subset(otz_tows, cruise_no == "AR43")
-AR43_total <- merge(AR43_tows, AR43_flow, by.x="tow_no", by.y="tow_no")
+SG2105_tows <- subset(otz_tows, cruise_no == "SG2105")
+SG2105_total <- merge(SG2105_tows, SG2105_flow, by.x="tow_no", by.y="tow_no")
 
-AR43_total$day_night <- " "
-AR43_total$deci_start_time_ET <- 
-  sapply(strsplit(AR43_total$tow_start_time_EST,":"),
-            function(x) {
-                x <- as.numeric(x)
-                x[1]+x[2]/60
-                         })
-AR43_total$day_night <- cut((AR43_total$deci_start_time_ET), c(0,5,18,24),
-                  c("night", "day", "night"))
-
+SG2105_total$day_night <- " "
+SG2105_total$deci_start_time_ET <- 
+  sapply(strsplit(SG2105_total$tow_start_time_EST,":"),
+         function(x) {
+           x <- as.numeric(x)
+           x[1]+x[2]/60
+         })
+SG2105_total$day_night <- cut((SG2105_total$deci_start_time_ET), c(0,5,18,24),
+                            c("night", "day", "night"))
 
 #vv sandbox vv
 #helpful code for sp. and spp. 
 #https://github.com/marytoner/WoRMS_matching/blob/master/demo_modified_forLaurenM.Rmd#L56
+
